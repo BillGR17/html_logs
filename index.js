@@ -1,49 +1,38 @@
-function print(text) {
-  var x = document.getElementById("debug");
-  //check if div exist
-  //if not create it and also add a script
-  //that scrolls on bottom on every change
+const print = (text) => {
+  const x = document.getElementById("debug");
   if (x) {
-    x.innerHTML += "\n" + text;
+    x.appendChild(document.createTextNode("\n" + text));
   } else {
-    let div = document.createElement("pre"),
-      css = "display:block;" +
-      "position:fixed;" +
-      "z-index:99999999;" +
-      "padding:5px;" +
-      "bottom:15px;" +
-      "left:15px;" +
-      "right:15px;" +
-      "max-height:300px;" +
-      "background:#333;" +
-      "color:#ddd;" +
-      "overflow: auto;" +
-      "margin:0;";
-    div.id = "debug";
+    const div = document.createElement("pre");
+    const css = `display:block;
+      position:fixed;
+      z-index:99999999;
+      padding:5px;
+      bottom:15px;
+      left:15px;
+      right:15px;
+      max-height:300px;
+      background:#333;
+      color:#ddd;
+      overflow: auto;
+      margin:0;`;
+    div.id = "_html_logs_";
     div.style.cssText = css;
-    div.innerHTML = text;
+    div.textContent = text;
     document.body.appendChild(div);
-    let script = document.createElement("script");
-    script.type = "text/javascript";
-    script.innerHTML = `var x=document.getElementById("debug");
-    if(window.addEventListener) {
-      x.addEventListener('DOMSubtreeModified', if_changed, false);
-    }
-    function if_changed() {
-      x.scrollTop = x.scrollHeight;
-    }`;
-    document.body.appendChild(script);
+
+    // Auto-scroll to bottom on change
+    const observer = new MutationObserver(() => {
+      div.scrollTop = div.scrollHeight;
+    });
+    observer.observe(div, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
   }
-}
-//convert number to digits
-function toDigit(n, p) {
-  if (!p) {
-    p = 2;
-  } //convert to 2 digit by default
-  let d = new Array(p + 1).join("0");
-  return (d + n).slice(-p);
-}
-//firefox solution for json stringify errors
+};
+
 const jsonFix = () => {
   const seen = new WeakSet();
   return (key, value) => {
@@ -56,22 +45,26 @@ const jsonFix = () => {
     return value;
   };
 };
-export function log(...get) {
-  let output = [];
-  //for each get value check the type(so far only object requires different approach)
-  //and push the value also call use console log
-  let t = new Date(),
-    h = toDigit(t.getHours()),
-    m = toDigit(t.getMinutes()),
-    s = toDigit(t.getSeconds()),
-    ms = toDigit(t.getMilliseconds(), 3);
+
+const timeFormatter = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  fractionalSecondDigits: 3,
+  hour12: false,
+});
+
+export const log = (...get) => {
+  const timestamp = timeFormatter.format(new Date()).replace(".", ":");
+
   console.log(get); //eslint-disable-line
-  for (let i = 0; i < get.length; i++) {
-    if (typeof(get[i]) === "object") {
-      output.push(String(JSON.stringify(get[i], jsonFix())));
-    } else {
-      output.push(String(get[i]));
+
+  const output = get.map((item) => {
+    if (typeof item === "object") {
+      return String(JSON.stringify(item, jsonFix()));
     }
-  }
-  print(h + ":" + m + ":" + s + ":" + ms + " " + output.join(" "));
-}
+    return String(item);
+  });
+
+  print(`${timestamp} ${output.join(" ")}`);
+};
