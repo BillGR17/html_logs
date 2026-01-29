@@ -1,6 +1,6 @@
 {
   "name": "html_logs",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Write log on html and on console.log at once",
   "main": "index.js",
   "scripts": {
